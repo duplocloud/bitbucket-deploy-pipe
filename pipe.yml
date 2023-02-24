@@ -1,0 +1,26 @@
+name: DuploCloud Deploy
+image: duplocloud/bitbucket-deploy-pipe:0.1.0
+description: Deploy new image to Duplo service. 
+category: Deployment
+repository: https://bitbucket.org/duplocloud/bitbucket-deploy-pipe
+vendor:
+  name: DuploCloud
+  website: https://duplocloud.com/
+maintainer:
+  name: DuploCloud
+  website: https://duplocloud.com/
+tags:
+  - deployment
+  - images
+  - duplocloud
+variables:
+  - name: DUPLO_HOST
+    default: "$DUPLO_HOST"
+  - name: DUPLO_TOKEN
+    default: "$DUPLO_TOKEN"
+  - name: TENANT
+    default: "$TENANT"
+  - name: SERVICE
+    default: "$SERVICE"
+  - name: IMAGE
+    default: "$IMAGE"
