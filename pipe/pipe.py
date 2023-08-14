@@ -1,5 +1,6 @@
 import requests
 from bitbucket_pipes_toolkit import Pipe, yaml, get_variable, get_logger
+from slack_sdk.webhook import WebhookClient
 
 # some global vars
 REQUESTS_DEFAULT_TIMEOUT = 10
@@ -10,7 +11,13 @@ schema = {
   'DUPLO_HOST': {'required': True, 'type': 'string'},
   'TENANT': {'required': True, 'type': 'string'},
   'SERVICE': {'required': True, 'type': 'string'},
-  'IMAGE': {'required': True, 'type': 'string'}
+  'IMAGE': {'required': True, 'type': 'string'},
+  'SLACK_WEBHOOK': {'required': False, 'type': 'string'},
+  'NOTIF_REGION': {'required': False, 'type': 'string'},
+  'NOTIF_ACCOUNT': {'required': False, 'type': 'string'},
+  'NOTIF_ENV': {'required': False, 'type': 'string'},
+  'BITBUCKET_REPO_FULL_NAME': {'required': False, 'type': 'string'},
+  'BITBUCKET_BUILD_NUMBER': {'required': False, 'type': 'string'},
 }
 
 logger = get_logger()
@@ -34,6 +41,13 @@ class DuploDeploy(Pipe):
       'Content-Type': 'application/json',
       'Authorization': f"Bearer {token}"
     }
+    self.slack_webhook = self.get_variable("SLACK_WEBHOOK")
+    self.should_slack = self.slack_webhook is not None
+    self.notif_region = self.get_variable("NOTIF_REGION")
+    self.notif_account = self.get_variable("NOTIF_ACCOUNT")
+    self.notif_env = self.get_variable("NOTIF_ENV")
+    self.repo_full_name = self.get_variable("BITBUCKET_REPO_FULL_NAME")
+    self.build_number = self.get_variable("BITBUCKET_BUILD_NUMBER")
   
   def get_tenant_id(self):
     """Get Tenant ID
@@ -86,10 +100,38 @@ class DuploDeploy(Pipe):
     except requests.ConnectionError as error:
       self.fail(error)
 
+  def send_detailed_slack_message(self, blurb = "Starting deploy"):
+    try:
+      self.message = blurb
+      self.message += "\nService: " + self.service
+      self.message += "\nTenant: " + self.tenant_name
+      self.message += "\nImage: " + self.image
+      if self.notif_region is not None:
+        self.message += "\nRegion: " + self.notif_region
+      if self.notif_account is not None:
+        self.message += "\nAccount: " + self.notif_account
+      if self.notif_env is not None:
+        self.message += "\nEnv: " + self.notif_env
+      self.message += "\n<https://bitbucket.org/" + self.repo_full_name + "/pipelines/results/" + self.build_number + "|Deployment Pipeline Run>"
+      self.webhook = WebhookClient(self.slack_webhook)
+      response = self.webhook.send(text=self.message)
+      assert response.status_code == 200
+      assert response.body == "ok"
+    except requests.exceptions.Timeout as error:
+      self.fail(error)
+    except requests.ConnectionError as error:
+      self.fail(error)
+
   def run(self):
     super().run()
+    if self.should_slack:
+      logger.info(f"Sending pre-deploy slack notif for {self.service} in {self.tenant_name}")
+      self.send_detailed_slack_message("Starting deploy")
     logger.info(f"Updating {self.service} in {self.tenant_name}")
     self.update_image()
+    if self.should_slack:
+      logger.info(f"Sending post-deploy slack notif for {self.service} in {self.tenant_name}")
+      self.send_detailed_slack_message("Deploy finished")
 
 if __name__ == '__main__':
   with open('/pipe.yml', 'r') as metadata_file:

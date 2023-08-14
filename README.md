@@ -23,6 +23,12 @@ Updates a services image tag on DuploCloud.
 | TENANT | The tenant where the service is in |  
 | SERVICE | The name of the service to update |  
 | IMAGE | The new image of the service. | 
+| SLACK_WEBHOOK | Webhook for pre/post deploy notifications. Blank for no notifications. |
+| NOTIF_REGION | Cloud region to mention in the message. |
+| NOTIF_ACCOUNT | Cloud account to mention in the message. |
+| NOTIF_ENV | Cloud env to mention in the message. |
+| BITBUCKET_REPO_FULL_NAME | Repo name used in build link. |
+| BITBUCKET_BUILD_NUMBER | Build number used in build link. |
 
 ## Prerequisites  
 
