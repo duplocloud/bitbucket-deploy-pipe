@@ -103,7 +103,7 @@ class DuploDeploy(Pipe):
   def send_detailed_slack_message(self, blurb = "Starting deploy"):
     try:
       self.message = blurb
-      self.message += "\nService: " + self.service
+      self.message += "\n*Service: " + self.service + "*"
       self.message += "\nTenant: " + self.tenant_name
       self.message += "\nImage: " + self.image
       if self.notif_region is not None:
@@ -126,12 +126,12 @@ class DuploDeploy(Pipe):
     super().run()
     if self.should_slack:
       logger.info(f"Sending pre-deploy slack notif for {self.service} in {self.tenant_name}")
-      self.send_detailed_slack_message("Starting deploy")
+      self.send_detailed_slack_message("*Starting deploy*")
     logger.info(f"Updating {self.service} in {self.tenant_name}")
     self.update_image()
     if self.should_slack:
       logger.info(f"Sending post-deploy slack notif for {self.service} in {self.tenant_name}")
-      self.send_detailed_slack_message("Deploy finished")
+      self.send_detailed_slack_message("*Deploy finished*")
 
 if __name__ == '__main__':
   with open('/pipe.yml', 'r') as metadata_file:
